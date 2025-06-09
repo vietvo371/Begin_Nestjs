@@ -1,55 +1,58 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { User } from './interfaces/user.interface';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
+import * as bcrypt from 'bcrypt';
+import * as jwt from 'jsonwebtoken';
+import { Role } from './enums/role.enum';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {}
 
-  create(createUserDto: CreateUserDto): User {
-    const user: User = {
-      id: this.users.length + 1,
-      ...createUserDto,
-    };
-    this.users.push(user);
+  async findByUsername(username: string): Promise<User | undefined> {
+    const user = await this.usersRepository.findOne({ where: { username } });
+    return user || undefined;
+  }
+
+  async register(username: string, password: string): Promise<User> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = this.usersRepository.create({
+      username,
+      password: hashedPassword,
+    });
+    return this.usersRepository.save(user);
+  }
+
+  async getProfile(id: number): Promise<User | undefined> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
     return user;
   }
 
-  findAll(): User[] {
-    return this.users;
+  private generateToken(user: User): string {
+    return jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   }
 
-  findOne(id: number): User | undefined {
-    return this.users.find(user => user.id === id);
-  }
-
-  update(id: number, updateUserDto: CreateUserDto): User | null {
-    const userIndex = this.users.findIndex(user => user.id === id);
-    if (userIndex > -1) {
-      this.users[userIndex] = {
-        ...this.users[userIndex],
-        ...updateUserDto,
-      };
-      return this.users[userIndex];
+  async login(username: string, password: string): Promise<{ id: number; username: string; role: Role; token: string }> {
+    const user = await this.usersRepository.findOne({ where: { username } });
+    if (!user) {
+      throw new UnauthorizedException('Invalid username or password');
     }
-    return null;
-  }
-
-  remove(id: number): User | null {
-    const userIndex = this.users.findIndex(user => user.id === id);
-    if (userIndex > -1) {
-      const user = this.users[userIndex];
-      this.users.splice(userIndex, 1);
-      return user;
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid username or password');
     }
-    return null;
-  }
-
-  findByEmail(email: string): User | undefined {
-    return this.users.find(user => user.email === email);
-  }
-
-  findByAge(age: number): User[] {
-    return this.users.filter(user => user.age === age);
+    return {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      token: this.generateToken(user),
+    };
   }
 }
