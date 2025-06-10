@@ -1,0 +1,109 @@
+// public/upload.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-form {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .preview {
+            margin-top: 20px;
+        }
+        img {
+            max-width: 200px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Single File Upload</h2>
+    <div class="upload-form">
+        <form id="singleUploadForm">
+            <input type="file" name="file" accept="image/*">
+            <button type="submit">Upload Single File</button>
+        </form>
+        <div id="singlePreview" class="preview"></div>
+    </div>
+
+    <h2>Multiple Files Upload</h2>
+    <div class="upload-form">
+        <form id="multipleUploadForm">
+            <input type="file" name="files" multiple accept="image/*">
+            <button type="submit">Upload Multiple Files</button>
+        </form>
+        <div id="multiplePreview" class="preview"></div>
+    </div>
+
+    <script>
+        // Single File Upload
+        document.getElementById('singleUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('http://localhost:3000/upload/single', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZpZXR2bzMxMUBnbWFpbC5jb20iLCJzdWIiOjEsImlhdCI6MTc0OTU0NDgzNSwiZXhwIjoxNzQ5NTQ4NDM1fQ.5y5jGWFxVSyOKQVAVICzlTFkbr_ZLcfx--kbSC7fvjc' // Thay thế bằng token thật
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('singlePreview').innerHTML = `
+                        <p>File uploaded successfully!</p>
+                        <p>Filename: ${data.filename}</p>
+                        <img src="http://localhost:3000/upload/files/${data.filename}" alt="Uploaded file">
+                    `;
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                alert('Error uploading file: ' + error.message);
+            }
+        });
+
+        // Multiple Files Upload
+        document.getElementById('multipleUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('http://localhost:3000/upload/multiple', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InZpZXR2bzMxMUBnbWFpbC5jb20iLCJzdWIiOjEsImlhdCI6MTc0OTU0NDgzNSwiZXhwIjoxNzQ5NTQ4NDM1fQ.5y5jGWFxVSyOKQVAVICzlTFkbr_ZLcfx--kbSC7fvjc' // Thay thế bằng token thật
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('multiplePreview').innerHTML = data.map(file => `
+                        <div>
+                            <p>File uploaded: ${file.filename}</p>
+                            <img src="http://localhost:3000/upload/files/${file.filename}" alt="Uploaded file">
+                        </div>
+                    `).join('');
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                alert('Error uploading files: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

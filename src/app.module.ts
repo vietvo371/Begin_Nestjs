@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { RedisCacheModule } from './cache/cache.module';
-import { redisStore } from 'cache-manager-redis-store';
 import { UploadModule } from './upload/upload.module';
 
 @Module({
