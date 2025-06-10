@@ -5,16 +5,25 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { Role } from './enums/role.enum';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private cacheService: CacheService,
   ) {}
 
   async findByUsername(username: string): Promise<User | undefined> {
+    const cachedUser = await this.cacheService.get(`user:${username}`);
+    if (cachedUser) {
+      return cachedUser;
+    }
     const user = await this.usersRepository.findOne({ where: { username } });
+    if (user) {
+      await this.cacheService.set(`user:${username}`, user);
+    }
     return user || undefined;
   }
 

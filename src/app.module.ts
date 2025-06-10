@@ -6,9 +6,13 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
+import { RedisCacheModule } from './cache/cache.module';
+import { redisStore } from 'cache-manager-redis-store';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
+    RedisCacheModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -24,6 +28,7 @@ import { User } from './users/entities/user.entity';
     }),
     AuthModule,
     UsersModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
